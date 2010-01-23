@@ -71,8 +71,10 @@ class Synchronization:
     @staticmethod
     def initialize(targetdir):
         'Create a new empty mirror. This operation should not be interrupted.'
-        assert not os.path.exists(targetdir)
-        os.makedirs(targetdir)
+        if not os.path.exists(targetdir):
+            os.makedirs(targetdir)
+        else:
+            assert not os.listdir(targetdir)
         for d in ('/web/simple', '/web/packages', '/web/serversig'):
             os.makedirs(targetdir+d)
         status = Synchronization()
@@ -95,7 +97,7 @@ class Synchronization:
             self.store()
         # sort projects to allow for repeatable runs
         for project in sorted(self.projects_to_do):
-            print "Synchronizing", project
+            print "Synchronizing", project.encode('utf-8')
             data = self.copy_simple_page(project)
             if not data:
                 self.delete_project(project)
@@ -119,8 +121,9 @@ class Synchronization:
             self.store()
 
     def copy_simple_page(self, project):
+        project = project.encode('utf-8')
         h = http()
-        h.putrequest('GET', '/simple/'+urllib2.quote(project.encode('utf-8'))+'/')
+        h.putrequest('GET', '/simple/'+urllib2.quote(project)+'/')
         h.putheader('User-Agent', UA)
         h.endheaders()
         r = h.getresponse()
@@ -133,7 +136,7 @@ class Synchronization:
             os.mkdir(self.homedir+'/web/simple/'+project)
         with open(self.homedir + "/web/simple/" + project + 'index.html', "wb") as f:
             f.write(html)
-        h.putrequest('GET', '/serversig/'+urllib2.quote(project.encode('utf-8'))+'/')
+        h.putrequest('GET', '/serversig/'+urllib2.quote(project)+'/')
         h.putheader('User-Agent', UA)
         h.endheaders()
         r = h.getresponse()
